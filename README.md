@@ -18,7 +18,7 @@ It also configures five fingerprint attempts within 60 seconds for sudo, boot lo
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/idruvau5/asus-elan7001-fingerprint-linux/v0.1.0/install.sh -o /tmp/install-elan-fingerprint.sh
+curl -fsSL https://raw.githubusercontent.com/idruvau5/asus-elan7001-fingerprint-linux/v0.1.3/install.sh -o /tmp/install-elan-fingerprint.sh
 bash /tmp/install-elan-fingerprint.sh
 ```
 
