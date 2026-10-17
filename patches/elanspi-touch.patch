@@ -1,5 +1,5 @@
 diff --git a/libfprint/drivers/elanspi.c b/libfprint/drivers/elanspi.c
-index 9338013..36c762c 100644
+index 9338013..ad182da 100644
 --- a/libfprint/drivers/elanspi.c
 +++ b/libfprint/drivers/elanspi.c
 @@ -1329,11 +1329,52 @@ elanspi_fp_assembling_get_pixel (struct fpi_frame_asmbl_ctx *ctx, struct fpi_fra
@@ -56,7 +56,7 @@ index 9338013..36c762c 100644
    struct fpi_frame_asmbl_ctx assembling_ctx = {
      .image_width = (self->frame_width * 3) / 2,
  
-@@ -1348,17 +1389,42 @@ elanspi_fp_frame_stitch_and_submit (FpiDeviceElanSpi *self)
+@@ -1348,17 +1389,67 @@ elanspi_fp_frame_stitch_and_submit (FpiDeviceElanSpi *self)
  
    fpi_do_movement_estimation (&assembling_ctx, frame_start);
    img = fpi_assemble_frames (&assembling_ctx, frame_start);
@@ -82,7 +82,28 @@ index 9338013..36c762c 100644
 +static void
 +elanspi_press_capture_and_submit (FpiDeviceElanSpi *self)
 +{
-+  g_autoptr(FpImage) img = fp_image_new (self->frame_width, self->frame_height);
++  guint8 saved_frame_width = self->frame_width;
++  guint8 saved_frame_height = self->frame_height;
++  guint8 press_width;
++  guint8 press_height;
++
++  /* The legacy swipe path limits frames to 43 rows. ELAN eFSA96SA is a
++   * 96x96 touch sensor; Windows captures the complete press frame. Use the
++   * full native dimensions here so SIGFM sees enough stable keypoints. */
++  if (fpi_device_get_driver_data (FP_DEVICE (self)) & ELANSPI_HV_FLIPPED)
++    {
++      press_width = self->sensor_height;
++      press_height = self->sensor_width;
++    }
++  else
++    {
++      press_width = self->sensor_width;
++      press_height = self->sensor_height;
++    }
++
++  self->frame_width = press_width;
++  self->frame_height = press_height;
++  g_autoptr(FpImage) img = fp_image_new (press_width, press_height);
 +
 +  /* Windows switches this ELAN7001 sensor to FPSensorMode=2 and captures
 +   * one complete frame after SensorWaitFingerPress. Reproduce that
@@ -91,6 +112,10 @@ index 9338013..36c762c 100644
 +  elanspi_process_frame (self, self->last_image, img->data);
 +  img->flags |= FPI_IMAGE_COLORS_INVERTED;
 +  elanspi_smooth_image (img);
++
++  self->frame_width = saved_frame_width;
++  self->frame_height = saved_frame_height;
++
 +  fpi_image_device_image_captured (FP_IMAGE_DEVICE (self),
 +                                   g_steal_pointer (&img));
 +  /* This is a touch/press sensor. The Windows driver stops acquisition after
@@ -102,7 +127,7 @@ index 9338013..36c762c 100644
  static gint64
  elanspi_get_frame_diff_stddev_sq (FpiDeviceElanSpi *self, guint16 *frame1, guint16 *frame2)
  {
-@@ -1414,6 +1480,14 @@ elanspi_fp_frame_handler (FpiSsm *ssm, FpiDeviceElanSpi *self)
+@@ -1414,6 +1505,14 @@ elanspi_fp_frame_handler (FpiSsm *ssm, FpiDeviceElanSpi *self)
        break;
  
      case ELANSPI_GUESS_FINGERPRINT:
@@ -117,7 +142,7 @@ index 9338013..36c762c 100644
        if (self->fp_empty_counter && self->fp_frame_list)
          {
            if (self->fp_empty_counter < 1)
-@@ -1698,10 +1772,16 @@ fpi_device_elanspi_class_init (FpiDeviceElanSpiClass *klass)
+@@ -1698,10 +1797,16 @@ fpi_device_elanspi_class_init (FpiDeviceElanSpiClass *klass)
    dev_class->full_name = "ElanTech Embedded Fingerprint Sensor";
    dev_class->type = FP_DEVICE_TYPE_UDEV;
    dev_class->id_table = elanspi_id_table;
