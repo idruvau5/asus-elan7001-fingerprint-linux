@@ -13,6 +13,8 @@ Hardware covered:
 
 The installer clones the pinned `goodix-fp-linux-dev/libfprint` `sigfm` branch, applies the press-mode patch, builds it under `/opt/libfprint-sigfm`, and configures fprintd to use it. It also stops acquisition after one press frame; this prevents the Linux wait-up polling loop that previously triggered the ELAN thermal guard.
 
+It also configures five fingerprint attempts within 60 seconds for sudo, boot login, and Cinnamon screen unlock, with password fallback after the attempts are exhausted.
+
 ## Install
 
 ```bash

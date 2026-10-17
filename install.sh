@@ -18,5 +18,18 @@ sudo install -d -m 755 /etc/systemd/system/fprintd.service.d
 sudo install -m 644 "$ROOT/config/fprintd-elanspi.conf" /etc/systemd/system/fprintd.service.d/10-elanspi-sigfm.conf
 sudo systemctl daemon-reload
 sudo systemctl restart fprintd
+
+# Use five fingerprint attempts within 60 seconds for sudo, boot login, and
+# Cinnamon unlock. Keep package templates aligned with the active PAM stack.
+for pam_file in /etc/pam.d/common-auth /usr/share/pam-configs/fprintd /usr/share/pam-configs/fingwit; do
+  if [[ -f "$pam_file" ]]; then
+    tmp=$(mktemp)
+    sed -E 's/pam_fprintd\.so max-tries=[0-9]+ timeout=[0-9]+/pam_fprintd.so max-tries=5 timeout=60/g' "$pam_file" > "$tmp"
+    sudo install -m 644 "$tmp" "$pam_file"
+    rm -f "$tmp"
+  fi
+done
+
 echo 'Installed. Close Fingwit before enrollment or verification.'
+echo 'Fingerprint authentication allows five attempts with a 60-second window.'
 echo 'Enroll with: fprintd-enroll -f right-middle-finger'
