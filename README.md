@@ -11,14 +11,14 @@ Hardware covered:
 - Capture mode: Windows-style press/touch; no swipe
 - Linux stack: `fprintd` plus a SIGFM-enabled libfprint build
 
-The installer clones the pinned `goodix-fp-linux-dev/libfprint` `sigfm` branch, applies the press-mode patch, builds it under `/opt/libfprint-sigfm`, and configures fprintd to use it. It captures the complete native 96x96 press frame, then stops acquisition immediately; this preserves more fingerprint keypoints and prevents the Linux wait-up polling loop that previously triggered the ELAN thermal guard.
+The installer clones the pinned `goodix-fp-linux-dev/libfprint` `sigfm` branch, applies the press-mode patch, builds it under `/opt/libfprint-sigfm`, and configures fprintd to use it. It captures the complete native 96x96 press frame, throttles idle polling, and resets the sensor when capture ownership ends. This preserves more fingerprint keypoints and prevents the Linux wait-up polling loop that previously triggered the ELAN thermal guard.
 
 It also configures five fingerprint attempts within 60 seconds for sudo, boot login, and Cinnamon screen unlock, with password fallback after the attempts are exhausted.
 
 ## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/idruvau5/asus-elan7001-fingerprint-linux/v0.1.3/install.sh -o /tmp/install-elan-fingerprint.sh
+curl -fsSL https://raw.githubusercontent.com/idruvau5/asus-elan7001-fingerprint-linux/v0.1.4/install.sh -o /tmp/install-elan-fingerprint.sh
 bash /tmp/install-elan-fingerprint.sh
 ```
 
